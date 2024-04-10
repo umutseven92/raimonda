@@ -1,4 +1,5 @@
 import dataclasses
+import logging
 from enum import Enum, auto
 
 from game.deck import Card
@@ -29,6 +30,7 @@ class Player:
         self.status = Status.BUSTED
 
     def deal_card(self, card: Card):
+        logging.info(f"Dealing {str(card)} to {self.name}.")
         self._cards.append(card)
 
     def get_value(self) -> tuple[int, int]:

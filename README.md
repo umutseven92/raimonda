@@ -1,2 +1,3 @@
-# blackjack-solver
-A blackjack solver / simulator in Python.
+# Blackjack Solver
+
+A simple Blackjack solver and simulator, written in Python.

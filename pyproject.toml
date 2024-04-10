@@ -1,0 +1,16 @@
+[project]
+name = "blackjack-solver"
+description = "A simple Blackjack solver and simulator, written in Python."
+version = "0.1.0"
+authors = [
+    { name = "Umut Seven", email = "umutseven92@gmail.com" }
+]
+
+[project.urls]
+"Homepage" = "https://github.com/umutseven92/blackjack-solver"
+"Bug Reports" = "https://github.com/umutseven92/blackjack-solver/issues"
+"Source" = "https://github.com/umutseven92/blackjack-solver"
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "INFO"

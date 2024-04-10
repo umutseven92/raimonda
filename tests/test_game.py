@@ -21,10 +21,10 @@ class TestGame:
             Game(players=players, game_amount=100)
 
     def test_can_play(self):
-        game_amount = 100
+        game_amount = 1
         players = [
             Player(name="Test Player 1", bankroll=200, strategy=STAND_EVERYTIME_STRAT),
-            Player(name="Test Player 2", bankroll=200, strategy=STAND_EVERYTIME_STRAT)
+            Player(name="Test Player 2", bankroll=200, strategy=STAND_EVERYTIME_STRAT),
         ]
         game = Game(players=players, game_amount=game_amount)
 

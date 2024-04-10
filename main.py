@@ -15,7 +15,9 @@ def _create_players(amount: int) -> list[Player]:
     for i in range(amount):
         players.append(
             Player(
-                name=f"Player {str(i)}", bankroll=200, strategy=STAND_EVERYTIME_STRAT
+                name=f"Player {str(i + 1)}",
+                bankroll=200,
+                strategy=STAND_EVERYTIME_STRAT,
             )
         )
 
@@ -49,7 +51,7 @@ def _draw_scores(scores: dict[Player, int]):
 
 if __name__ == "__main__":
     player_count = 5
-    game_count = 100
+    game_count = 5
     players = _create_players(player_count)
 
     game = Game(players=players, game_amount=game_count)
