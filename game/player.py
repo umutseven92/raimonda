@@ -30,7 +30,7 @@ class Player:
         self.status = Status.BUSTED
 
     def deal_card(self, card: Card):
-        logging.info(f"Dealing {str(card)} to {self.name}.")
+        logging.debug(f"Dealing {str(card)} to {self.name}.")
         self._cards.append(card)
 
     def get_value(self) -> tuple[int, int]:
@@ -53,3 +53,6 @@ class Player:
 
     def __eq__(self, other):
         return self.name == other.name
+
+    def __repr__(self):
+        return f"{self.name}, value {self.get_value()}"

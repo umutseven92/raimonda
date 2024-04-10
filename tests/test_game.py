@@ -1,6 +1,10 @@
 import pytest
 
-from game.exceptions import DuplicatePlayerNameException, NotEnoughPlayersException
+from game.exceptions import (
+    DuplicatePlayerNameException,
+    NotEnoughPlayersException,
+    CantNamePlayerDealerException,
+)
 from game.game import Game
 from game.player import Player
 from game.strategy import STAND_EVERYTIME_STRAT
@@ -19,6 +23,15 @@ class TestGame:
 
         with pytest.raises(DuplicatePlayerNameException):
             Game(players=players, game_amount=100)
+
+    def test_naming_player_dealer_raises(self):
+        with pytest.raises(CantNamePlayerDealerException):
+            Game(
+                players=[
+                    Player(name="Dealer", bankroll=200, strategy=STAND_EVERYTIME_STRAT)
+                ],
+                game_amount=100,
+            )
 
     def test_can_play(self):
         game_amount = 1

@@ -1,9 +1,16 @@
 import logging
+import time
 
 from game.deck import Deck
-from game.exceptions import NotEnoughPlayersException, DuplicatePlayerNameException
+from game.exceptions import (
+    NotEnoughPlayersException,
+    DuplicatePlayerNameException,
+    CantNamePlayerDealerException,
+)
 from game.player import Player, Status
 from game.strategy import DEFAULT_DEALER_STRAT, Action
+
+DEALER_NAME = "Dealer"
 
 
 class Game:
@@ -16,7 +23,7 @@ class Game:
         self._game_amount = game_amount
 
         self._dealer = Player(
-            bankroll=1000, name="Dealer", strategy=DEFAULT_DEALER_STRAT
+            bankroll=1000, name=DEALER_NAME, strategy=DEFAULT_DEALER_STRAT
         )
 
     @staticmethod
@@ -27,6 +34,9 @@ class Game:
         player_names = [player.name for player in players]
         if len(player_names) != len(set(player_names)):
             raise DuplicatePlayerNameException()
+
+        if DEALER_NAME in player_names:
+            raise CantNamePlayerDealerException(dealer_name=DEALER_NAME)
 
     @staticmethod
     def _player_busted(player: Player) -> bool:
@@ -41,7 +51,7 @@ class Game:
             player.deal_card(self._deck.get_card())
 
     def _reset_game(self):
-        logging.info("Resetting game..")
+        logging.debug("Resetting game..")
 
         self._deck = Deck()
         self._reset_players()
@@ -49,6 +59,7 @@ class Game:
     def _reset_players(self):
         for player in self._players:
             player.reset()
+        self._dealer.reset()
 
     def _init_scores(self) -> dict[Player, int]:
         scores: dict[Player, int] = {self._dealer: 0}
@@ -59,28 +70,31 @@ class Game:
         return scores
 
     def _core_loop(self, player: Player):
-        logging.info(f"{player.name} is playing..")
+        logging.debug(f"{player.name} is playing..")
         while True:
             action = player.play(dealer_value=self._dealer.get_value())
 
             if action == Action.STAY:
-                logging.info(f"{player.name} stays.")
+                logging.debug(f"{player.name} stays.")
                 break
             elif action == Action.HIT:
-                logging.info(f"{player.name} hits.")
+                logging.debug(f"{player.name} hits.")
 
                 player.deal_card(self._deck.get_card())
 
-                logging.info(f"{player.name}'s new value is {player.get_value()}.")
+                logging.debug(f"{player.name}'s new value is {player.get_value()}.")
 
                 if self._player_busted(player):
-                    logging.info(f"{player.name} busted.")
+                    logging.debug(f"{player.name} busted.")
                     player.bust()
                     break
                 else:
                     continue
 
     def play(self) -> dict[Player, int]:
+        logging.info(f"Playing {self._game_amount} games..")
+        start = time.time()
+
         scores = self._init_scores()
 
         for i in range(self._game_amount):
@@ -114,5 +128,8 @@ class Game:
                 for ingame_player in ingame_players:
                     if ingame_player.get_value() > self._dealer.get_value():
                         scores[ingame_player] += 1
+
+        end = time.time()
+        logging.info(f"Games are finished. Took {(end - start):.4f} seconds.")
 
         return scores
