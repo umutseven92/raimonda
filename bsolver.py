@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import logging
 
 import matplotlib.pyplot as plt
@@ -57,6 +58,10 @@ def _draw_scores(scores: dict[Player, int], game_amount: int):
     ax.set_title(f"Wins and losses after {game_amount} games")
     ax.legend(loc="upper right")
 
+    figure_path = f"figures/scores_{game_amount}_{str(datetime.datetime.utcnow()).replace(' ', '_')}.png"
+    logging.info(f"Saving figure to {figure_path}..")
+
+    plt.savefig(figure_path)
     plt.show()
 
 

@@ -3,7 +3,7 @@ import logging
 from enum import Enum, auto
 
 from game.deck import Card
-from game.strategy import Strategy, Action
+from game.strategy import Strategy, Action, STAND_EVERYTIME_STRAT
 
 
 class Status(Enum):
@@ -14,10 +14,16 @@ class Status(Enum):
 @dataclasses.dataclass
 class Player:
     name: str
-    bankroll: float
     strategy: Strategy
+    bankroll: float | None = None
     status: Status = Status.INGAME
     _cards: list[Card] = dataclasses.field(default_factory=list)
+
+    @classmethod
+    def from_yaml(cls, data: dict):
+        bankroll = data["bankroll"] if "bankroll" in data else None
+
+        return cls(name=data["name"], bankroll=bankroll, strategy=STAND_EVERYTIME_STRAT)
 
     def reset(self):
         self._cards = []

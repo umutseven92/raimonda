@@ -1,0 +1,12 @@
+game:
+  push-22: false
+players:
+  - player:
+      name: "Player 1"
+      bankroll: 200
+  - player:
+      name: "Player 2"
+      bankroll: 300
+dealer:
+  name: Dealer
+  bankroll: 1000
