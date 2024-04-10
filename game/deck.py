@@ -2,6 +2,8 @@ import dataclasses
 import random
 from enum import Enum, auto
 
+from game.constants import CardValues
+
 
 class Rank(Enum):
     ACE = auto()
@@ -18,7 +20,7 @@ class Rank(Enum):
     QUEEN = auto()
     KING = auto()
 
-    def rank_value(self) -> tuple[int, int]:
+    def rank_value(self) -> CardValues:
         if self == Rank.ACE:
             return 1, 11
         elif self in [
@@ -48,7 +50,7 @@ class Card:
     rank: Rank
     suit: Suit
 
-    def card_value(self) -> tuple[int, int]:
+    def card_value(self) -> CardValues:
         return self.rank.rank_value()
 
     def __str__(self):

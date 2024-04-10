@@ -1,9 +1,11 @@
-import dataclasses
 import logging
 from enum import Enum, auto
 
+import user.play_strategies
+from game.constants import CardValues
 from game.deck import Card
-from game.strategy import Strategy, Action, STAND_EVERYTIME_STRAT
+from game.exceptions import StrategyNotFoundException
+from game.strategy import PlayStrategy, Action, default_dealer_play_strategy
 
 
 class Status(Enum):
@@ -11,26 +13,36 @@ class Status(Enum):
     BUSTED = auto()
 
 
-@dataclasses.dataclass
 class Player:
     name: str
-    strategy: Strategy
-    bankroll: float | None = None
+    play_strategy: PlayStrategy
+    bankroll: float | None
     status: Status = Status.INGAME
-    _cards: list[Card] = dataclasses.field(default_factory=list)
+    _cards: list[Card] = []
 
-    @classmethod
-    def from_yaml(cls, data: dict):
+    def __init__(self, name: str, data: dict):
         bankroll = data["bankroll"] if "bankroll" in data else None
+        if "play-strategy" not in data:
+            play_strategy = default_dealer_play_strategy
+        else:
+            function_name = data["play-strategy"]
+            func = getattr(user.play_strategies, function_name, None)
 
-        return cls(name=data["name"], bankroll=bankroll, strategy=STAND_EVERYTIME_STRAT)
+            if func is None:
+                raise StrategyNotFoundException(function_name)
+
+            play_strategy = func
+
+        self.name = name
+        self.play_strategy = play_strategy
+        self.bankroll = bankroll
 
     def reset(self):
         self._cards = []
         self.status = Status.INGAME
 
-    def play(self, dealer_value: tuple[int, int]) -> Action:
-        return self.strategy.play(self.get_value(), dealer_value)
+    def play(self, dealer_value: CardValues) -> Action:
+        return self.play_strategy(self.get_value(), dealer_value)
 
     def bust(self):
         self.status = Status.BUSTED
@@ -39,7 +51,7 @@ class Player:
         logging.debug(f"Dealing {str(card)} to {self.name}.")
         self._cards.append(card)
 
-    def get_value(self) -> tuple[int, int]:
+    def get_value(self) -> CardValues:
         """Get the value of the cards (total value of the ranks).
 
         If one of the cards is an Ace, there can be two different possible values, as Ace can be both 1 or 11.

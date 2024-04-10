@@ -4,10 +4,11 @@ import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
+import yaml
+from yaml import Loader
 
 from game.game import Game
 from game.player import Player
-from game.strategy import STAND_EVERYTIME_STRAT
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -16,22 +17,6 @@ parser.add_argument(
 parser.add_argument(
     "-d", "--debug", type=bool, default=False, help="Whether to log debug messages."
 )
-
-
-def _create_players(amount: int) -> list[Player]:
-    logging.info(f"Creating {amount} players..")
-
-    players = []
-    for i in range(amount):
-        players.append(
-            Player(
-                name=f"Player {str(i + 1)}",
-                bankroll=200,
-                strategy=STAND_EVERYTIME_STRAT,
-            )
-        )
-
-    return players
 
 
 def _draw_scores(scores: dict[Player, int], game_amount: int):
@@ -73,10 +58,10 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO)
 
-    player_count = 5
-    players = _create_players(player_count)
+    with open("config.yaml") as config_file:
+        loaded = yaml.load(config_file, Loader=Loader)
 
-    game = Game(players=players, game_amount=args.game_amount)
-    scores = game.play()
+    game = Game.from_yaml(loaded)
+    scores = game.play(game_amount=args.game_amount)
 
     _draw_scores(scores, game_amount=args.game_amount)

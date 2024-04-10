@@ -1,6 +1,7 @@
-import dataclasses
 from enum import Enum, auto
 from typing import Callable
+
+from game.constants import CardValues
 
 
 class Action(Enum):
@@ -8,16 +9,13 @@ class Action(Enum):
     STAY = auto()
 
 
-Value = tuple[int, int]
-Play = Callable[[Value, Value], Action]
+PlayStrategy = Callable[[CardValues, CardValues], Action]
+BetStrategy = Callable[[float], float]
 
 
-@dataclasses.dataclass
-class Strategy:
-    play: Play
-
-
-def dealer_play(player_val: Value, _dealer_val) -> Action:
+def default_dealer_play_strategy(
+    player_val: CardValues, _dealer_val: CardValues
+) -> Action:
     """Default dealer strategy is to hit if the card value is lower than 17."""
     if player_val[0] >= 17 or player_val[1] >= 17:
         return Action.STAY
@@ -25,11 +23,11 @@ def dealer_play(player_val: Value, _dealer_val) -> Action:
         return Action.HIT
 
 
-DEFAULT_DEALER_STRAT = Strategy(play=dealer_play)
-
-
-def stand_everytime(_player_val, _dealer_val) -> Action:
+def stand_everytime_play_strategy(
+    _player_val: CardValues, _dealer_val: CardValues
+) -> Action:
     return Action.STAY
 
 
-STAND_EVERYTIME_STRAT = Strategy(play=stand_everytime)
+def one_bet_strategy(_remaining_bankroll: float) -> float:
+    return 1

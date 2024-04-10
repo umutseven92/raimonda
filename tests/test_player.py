@@ -3,7 +3,7 @@ from yaml import Loader
 
 from game.deck import Card, Suit, Rank
 from game.player import Player
-from game.strategy import STAND_EVERYTIME_STRAT
+from game.strategy import STAND_EVERYTIME_STRATEGY
 
 
 class TestPlayer:
@@ -32,7 +32,7 @@ class TestPlayer:
 
     def test_can_get_value(self):
         player = Player(
-            name="Test Player", bankroll=100, strategy=STAND_EVERYTIME_STRAT
+            name="Test Player", bankroll=100, play_strategy=STAND_EVERYTIME_STRATEGY
         )
 
         player.deal_card(Card(rank=Rank.JACK, suit=Suit.CLUBS))  # 10
@@ -43,13 +43,13 @@ class TestPlayer:
 
     def test_can_get_hashed(self):
         player = Player(
-            name="Test Player", bankroll=100, strategy=STAND_EVERYTIME_STRAT
+            name="Test Player", bankroll=100, play_strategy=STAND_EVERYTIME_STRATEGY
         )
 
         assert hash(player) == hash("Test Player")
 
         player2 = Player(
-            name="Test Player", bankroll=120, strategy=STAND_EVERYTIME_STRAT
+            name="Test Player", bankroll=120, play_strategy=STAND_EVERYTIME_STRATEGY
         )
 
         assert player == player2

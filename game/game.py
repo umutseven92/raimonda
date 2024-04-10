@@ -1,42 +1,52 @@
 import logging
 import time
 
+from game.constants import DEALER_NAME
+from game.dealer import Dealer
 from game.deck import Deck
 from game.exceptions import (
-    NotEnoughPlayersException,
-    DuplicatePlayerNameException,
-    CantNamePlayerDealerException,
+    NotEnoughGamblersException,
+    DuplicateGamblerNameException,
+    CantNameGamblerDealerException,
 )
+from game.gambler import Gambler
 from game.player import Player, Status
-from game.strategy import DEFAULT_DEALER_STRAT, Action
-
-DEALER_NAME = "Dealer"
+from game.strategy import Action
 
 
 class Game:
-    def __init__(self, players: list[Player], game_amount: int, push_22: bool = False):
-        self._validate_players(players)
+    def __init__(self, gamblers: list[Gambler], dealer: Dealer, push_22: bool):
+        self._gamblers = gamblers
+        self._dealer = dealer
+        self._push_22 = push_22
 
         self._deck = Deck()
-        self._players = players
-        self._push_22 = push_22
-        self._game_amount = game_amount
 
-        self._dealer = Player(
-            bankroll=1000, name=DEALER_NAME, strategy=DEFAULT_DEALER_STRAT
-        )
+    @classmethod
+    def from_yaml(cls, data: dict):
+        gamblers = []
+
+        for player_yaml in data["gamblers"]:
+            gamblers.append(Gambler.from_yaml(player_yaml["gambler"]))
+
+        cls._validate_gamblers(gamblers)
+
+        dealer = Dealer.from_yaml(data["dealer"])
+        push_22 = data["game"]["push-22"]
+
+        return cls(gamblers, dealer, push_22)
 
     @staticmethod
-    def _validate_players(players: list[Player]):
-        if len(players) <= 0:
-            raise NotEnoughPlayersException()
+    def _validate_gamblers(gamblers: list[Gambler]):
+        if len(gamblers) <= 0:
+            raise NotEnoughGamblersException()
 
-        player_names = [player.name for player in players]
-        if len(player_names) != len(set(player_names)):
-            raise DuplicatePlayerNameException()
+        gambler_names = [player.name for player in gamblers]
+        if len(gambler_names) != len(set(gambler_names)):
+            raise DuplicateGamblerNameException()
 
-        if DEALER_NAME in player_names:
-            raise CantNamePlayerDealerException(dealer_name=DEALER_NAME)
+        if DEALER_NAME in gambler_names:
+            raise CantNameGamblerDealerException(dealer_name=DEALER_NAME)
 
     @staticmethod
     def _player_busted(player: Player) -> bool:
@@ -46,9 +56,9 @@ class Game:
 
         return False
 
-    def _deal_to_every_player(self):
-        for player in self._players:
-            player.deal_card(self._deck.get_card())
+    def _deal_to_every_gambler(self):
+        for gambler in self._gamblers:
+            gambler.deal_card(self._deck.get_card())
 
     def _reset_game(self):
         logging.debug("Resetting game..")
@@ -57,14 +67,14 @@ class Game:
         self._reset_players()
 
     def _reset_players(self):
-        for player in self._players:
+        for player in self._gamblers:
             player.reset()
         self._dealer.reset()
 
     def _init_scores(self) -> dict[Player, int]:
         scores: dict[Player, int] = {self._dealer: 0}
 
-        for player in self._players:
+        for player in self._gamblers:
             scores[player] = 0
 
         return scores
@@ -91,31 +101,31 @@ class Game:
                 else:
                     continue
 
-    def play(self) -> dict[Player, int]:
-        logging.info(f"Playing {self._game_amount} games..")
+    def play(self, game_amount: int) -> dict[Player, int]:
+        logging.info(f"Playing {game_amount} games..")
         start = time.time()
 
         scores = self._init_scores()
 
-        for i in range(self._game_amount):
+        for i in range(game_amount):
             self._reset_game()
 
             # First, each player gets one card.
-            self._deal_to_every_player()
+            self._deal_to_every_gambler()
 
             # Then the dealer gets one card
             self._dealer.deal_card(self._deck.get_card())
 
             # Then each player gets their second card.
-            self._deal_to_every_player()
+            self._deal_to_every_gambler()
 
-            for player in self._players:
+            for player in self._gamblers:
                 self._core_loop(player)
 
             self._core_loop(self._dealer)
 
             ingame_players = [
-                player for player in self._players if player.status != Status.BUSTED
+                player for player in self._gamblers if player.status != Status.BUSTED
             ]
 
             if self._dealer.status == Status.BUSTED:

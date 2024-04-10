@@ -1,12 +1,12 @@
 game:
   push-22: false
-players:
-  - player:
-      name: "Player 1"
+gamblers:
+  - gambler:
+      name: "Gambler 1"
+      bet-strategy: "two_bet_strategy"
       bankroll: 200
-  - player:
-      name: "Player 2"
-      bankroll: 300
+  - gambler:
+      name: "Gambler 2"
 dealer:
-  name: Dealer
+  play-strategy: "user_strat"
   bankroll: 1000
