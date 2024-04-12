@@ -1,14 +1,13 @@
 import user.bet_strategies
 import user.play_strategies
 from game.constants import CardValues
-from game.exceptions import StrategyNotFoundException
 from game.player.player import Player
 from game.strategy import (
     BetStrategy,
-    minimum_bet_strategy,
     default_gambler_play_strategy,
     GamblerPlayStrategy,
     Action,
+    minimum_bet_strategy,
 )
 
 
@@ -27,29 +26,15 @@ class Gambler(Player):
 
     @staticmethod
     def _get_bet_strategy(data: dict) -> BetStrategy:
-        if "bet-strategy" not in data:
-            func = minimum_bet_strategy
-        else:
-            function_name = data["bet-strategy"]
-            func = getattr(user.bet_strategies, function_name, None)
-
-            if func is None:
-                raise StrategyNotFoundException(function_name)
-
-        return func
+        return super()._get_strategy(
+            data, "bet-strategy", minimum_bet_strategy, user.bet_strategies
+        )
 
     @staticmethod
     def _get_play_strategy(data: dict) -> GamblerPlayStrategy:
-        if "play_strategy" not in data:
-            func = default_gambler_play_strategy
-        else:
-            function_name = data["play-strategy"]
-            func = getattr(user.play_strategies, function_name, None)
-
-            if func is None:
-                raise StrategyNotFoundException(function_name)
-
-        return func
+        return super()._get_strategy(
+            data, "play-strategy", default_gambler_play_strategy, user.play_strategies
+        )
 
     def run_bet_strategy(self, minimum_bet: float, maximum_bet: float) -> float:
         bet = self.bet_strategy(self.bankroll, minimum_bet, maximum_bet)

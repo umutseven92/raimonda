@@ -1,9 +1,11 @@
 import logging
 from enum import Enum, auto
-from typing import Self
+from types import ModuleType
+from typing import Self, TypeVar
 
 from game.constants import CardValues
 from game.deck.card import Card
+from game.exceptions import StrategyNotFoundException
 
 
 class Status(Enum):
@@ -15,6 +17,9 @@ class Status(Enum):
 
     # The player has lost all their bankroll, and is out of the game.
     BANKRUPT = auto()
+
+
+T = TypeVar("T")
 
 
 class Player:
@@ -40,6 +45,21 @@ class Player:
         bankroll = data["bankroll"] if "bankroll" in data else None
 
         return cls(name=name, bankroll=bankroll)
+
+    @staticmethod
+    def _get_strategy(
+        data: dict, name: str, default_strategy: T, module: ModuleType
+    ) -> T:
+        if name not in data:
+            func = default_strategy
+        else:
+            function_name = data[name]
+            func = getattr(module, function_name, None)
+
+            if func is None:
+                raise StrategyNotFoundException(function_name)
+
+        return func
 
     def __init__(self, name: str, bankroll: float):
         self.name = name
