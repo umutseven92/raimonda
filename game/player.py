@@ -1,16 +1,23 @@
 import logging
 from enum import Enum, auto
+from typing import Self
 
 import user.play_strategies
 from game.constants import CardValues
 from game.deck import Card
 from game.exceptions import StrategyNotFoundException
-from game.strategy import PlayStrategy, Action, default_dealer_play_strategy
+from game.strategy import PlayStrategy, Action
 
 
 class Status(Enum):
+    # The player is currently in play, in the game.
     INGAME = auto()
+
+    # The player has busted, but is still in the game.
     BUSTED = auto()
+
+    # The player has lost all their bankroll, and is out of the game.
+    BANKRUPT = auto()
 
 
 class Player:
@@ -20,10 +27,26 @@ class Player:
     status: Status = Status.INGAME
     _cards: list[Card] = []
 
-    def __init__(self, name: str, data: dict):
+    @property
+    def is_busted(self):
+        return self.status == Status.BUSTED
+
+    @property
+    def is_in_game(self):
+        return self.status == Status.INGAME
+
+    @property
+    def is_bankrupt(self):
+        return self.status == Status.BANKRUPT
+
+    @classmethod
+    def from_data(
+        cls, name: str, data: dict, default_play_strategy: PlayStrategy
+    ) -> Self:
         bankroll = data["bankroll"] if "bankroll" in data else None
-        if "play-strategy" not in data:
-            play_strategy = default_dealer_play_strategy
+
+        if "play_strategy" not in data:
+            func = default_play_strategy
         else:
             function_name = data["play-strategy"]
             func = getattr(user.play_strategies, function_name, None)
@@ -31,15 +54,17 @@ class Player:
             if func is None:
                 raise StrategyNotFoundException(function_name)
 
-            play_strategy = func
+        return cls(name=name, play_strategy=func, bankroll=bankroll)
 
+    def __init__(self, name: str, play_strategy: PlayStrategy, bankroll: float):
         self.name = name
         self.play_strategy = play_strategy
         self.bankroll = bankroll
 
     def reset(self):
         self._cards = []
-        self.status = Status.INGAME
+        if not self.is_bankrupt:
+            self.status = Status.INGAME
 
     def play(self, dealer_value: CardValues) -> Action:
         return self.play_strategy(self.get_value(), dealer_value)
@@ -47,9 +72,18 @@ class Player:
     def bust(self):
         self.status = Status.BUSTED
 
+    def bankrupt(self):
+        self.status = Status.BANKRUPT
+
     def deal_card(self, card: Card):
         logging.debug(f"Dealing {str(card)} to {self.name}.")
         self._cards.append(card)
+
+    def pay(self, amount: float):
+        self.bankroll += amount
+
+    def take_away(self, amount: float):
+        self.bankroll -= amount
 
     def get_value(self) -> CardValues:
         """Get the value of the cards (total value of the ranks).
@@ -65,6 +99,10 @@ class Player:
             second_value += card_value[1]
 
         return first_value, second_value
+
+    def value_is_blackjack(self) -> bool:
+        value = self.get_value()
+        return value[0] == 21 or value[1] == 21
 
     def __hash__(self):
         return hash(self.name)

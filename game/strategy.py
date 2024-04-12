@@ -23,9 +23,8 @@ def default_dealer_play_strategy(
         return Action.HIT
 
 
-def stand_everytime_play_strategy(
-    _player_val: CardValues, _dealer_val: CardValues
-) -> Action:
+def default_gambler_play_strategy(player_val: CardValues, dealer_val: CardValues):
+    # TODO: Optimal gambler strategy.
     return Action.STAY
 
 

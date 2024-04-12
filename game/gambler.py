@@ -1,15 +1,11 @@
 import user.bet_strategies
 from game.exceptions import StrategyNotFoundException
 from game.player import Player
-from game.strategy import BetStrategy, one_bet_strategy
+from game.strategy import BetStrategy, one_bet_strategy, default_gambler_play_strategy
 
 
 class Gambler(Player):
     bet_strategy: BetStrategy
-
-    def __init__(self, name: str, bet_strategy: BetStrategy, data: dict):
-        self.bet_strategy = bet_strategy
-        super().__init__(name, data=data)
 
     @classmethod
     def from_yaml(cls, data: dict):
@@ -24,4 +20,17 @@ class Gambler(Player):
 
             bet_strategy = func
 
-        return cls(name=data["name"], bet_strategy=bet_strategy, data=data)
+        val = super().from_data(
+            name=data["name"],
+            data=data,
+            default_play_strategy=default_gambler_play_strategy,
+        )
+
+        val.bet_strategy = bet_strategy
+
+        return val
+
+    def run_bet_strategy(self) -> float:
+        bet = self.bet_strategy(self.bankroll)
+        self.take_away(bet)
+        return bet
