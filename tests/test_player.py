@@ -2,9 +2,9 @@ import yaml
 from yaml import Loader
 
 from game.constants import DEALER_NAME
-from game.dealer import Dealer
-from game.deck import Card, Suit, Rank
-from game.gambler import Gambler
+from game.deck.card import Card, Suit, Rank
+from game.player.dealer import Dealer
+from game.player.gambler import Gambler
 from tests.helpers import player_to_test
 
 

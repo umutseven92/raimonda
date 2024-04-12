@@ -1,4 +1,9 @@
-from game.strategy import PlayStrategy
+from game.strategy import GamblerPlayStrategy
+
+
+class ConfigNotFoundException(Exception):
+    def __init__(self, path: str):
+        self.message = f"Cannot find config file at {path}."
 
 
 class NotEnoughGamblersException(Exception):
@@ -28,5 +33,5 @@ class StrategyWrongTypeException(Exception):
     def __init__(self, strategy_name: str):
         self.message = (
             f"Strategy {strategy_name} has wrong type."
-            f"Please make sure your defined strategy conforms to the type {str(PlayStrategy)}."
+            f"Please make sure your defined strategy conforms to the type {str(GamblerPlayStrategy)}."
         )

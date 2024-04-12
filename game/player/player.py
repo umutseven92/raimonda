@@ -2,11 +2,8 @@ import logging
 from enum import Enum, auto
 from typing import Self
 
-import user.play_strategies
 from game.constants import CardValues
-from game.deck import Card
-from game.exceptions import StrategyNotFoundException
-from game.strategy import PlayStrategy, Action
+from game.deck.card import Card
 
 
 class Status(Enum):
@@ -22,7 +19,6 @@ class Status(Enum):
 
 class Player:
     name: str
-    play_strategy: PlayStrategy
     bankroll: float | None
     status: Status = Status.INGAME
     _cards: list[Card] = []
@@ -40,34 +36,19 @@ class Player:
         return self.status == Status.BANKRUPT
 
     @classmethod
-    def from_data(
-        cls, name: str, data: dict, default_play_strategy: PlayStrategy
-    ) -> Self:
+    def from_data(cls, name: str, data: dict) -> Self:
         bankroll = data["bankroll"] if "bankroll" in data else None
 
-        if "play_strategy" not in data:
-            func = default_play_strategy
-        else:
-            function_name = data["play-strategy"]
-            func = getattr(user.play_strategies, function_name, None)
+        return cls(name=name, bankroll=bankroll)
 
-            if func is None:
-                raise StrategyNotFoundException(function_name)
-
-        return cls(name=name, play_strategy=func, bankroll=bankroll)
-
-    def __init__(self, name: str, play_strategy: PlayStrategy, bankroll: float):
+    def __init__(self, name: str, bankroll: float):
         self.name = name
-        self.play_strategy = play_strategy
         self.bankroll = bankroll
 
     def reset(self):
         self._cards = []
         if not self.is_bankrupt:
             self.status = Status.INGAME
-
-    def play(self, dealer_value: CardValues) -> Action:
-        return self.play_strategy(self.get_value(), dealer_value)
 
     def bust(self):
         self.status = Status.BUSTED
@@ -100,9 +81,9 @@ class Player:
 
         return first_value, second_value
 
-    def value_is_blackjack(self) -> bool:
+    def value_is_blackjack(self, blackjack: int) -> bool:
         value = self.get_value()
-        return value[0] == 21 or value[1] == 21
+        return value[0] == blackjack or value[1] == blackjack
 
     def __hash__(self):
         return hash(self.name)

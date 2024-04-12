@@ -1,0 +1,12 @@
+game:
+  minimum-bet: 5
+  maximum-bet: 200
+gamblers:
+  - gambler:
+      name: "Gambler 1"
+      bankroll: 200
+  - gambler:
+      name: "Gambler 2"
+      bankroll: 300
+dealer:
+  bankroll: 1000

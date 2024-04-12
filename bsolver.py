@@ -4,8 +4,6 @@ import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
-import yaml
-from yaml import Loader
 
 from game.game import Game
 from game.player import Player
@@ -58,10 +56,7 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO)
 
-    with open("config.yaml") as config_file:
-        loaded = yaml.load(config_file, Loader=Loader)
-
-    game = Game.from_yaml(loaded)
+    game = Game.from_yaml_file("config.yaml")
     scores = game.play(game_amount=args.game_amount)
 
     _draw_scores(scores, game_amount=args.game_amount)

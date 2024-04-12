@@ -1,12 +1,22 @@
 game:
-  push-22: false
+  minimum-bet: 5
+  maximum-bet: 200
+  # Which value the dealer stops. Default value is 17.
+  # dealer-stop: 17
+  # Whether to push on a value, most commonly 22. Default value is None.
+  # push-on: 22
+  # Blackjack value. Default value is 21.
+  # blackjack: 21
+# Configuration for gamblers; the players playing against the dealer.
 gamblers:
   - gambler:
+      # Name of the gambler. The name has to be unique, and it can't be Dealer.
       name: "Gambler 1"
-      bet-strategy: "two_bet_strategy"
+      # Bankroll of the gambler. If left empty, it will be counted as infinite, and the gambler will never go bankrupt.
       bankroll: 200
   - gambler:
       name: "Gambler 2"
+# Configuration for the dealer. The dealer has no bet strategy.
 dealer:
   play-strategy: "user_strat"
   bankroll: 1000

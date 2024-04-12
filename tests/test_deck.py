@@ -1,4 +1,5 @@
-from game.deck import Deck, Rank, Suit, Card
+from game.deck.card import Rank, Suit, Card
+from game.deck.deck import Deck
 
 
 class TestDeck:

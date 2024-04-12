@@ -1,26 +1,59 @@
+import dataclasses
 import logging
 import time
+from pathlib import Path
+from typing import Self, Callable
+
+import yaml
+from yaml import Loader
 
 from game.constants import DEALER_NAME
-from game.dealer import Dealer
-from game.deck import Deck
+from game.deck.deck import Deck
 from game.exceptions import (
     NotEnoughGamblersException,
     DuplicateGamblerNameException,
     CantNameGamblerDealerException,
+    ConfigNotFoundException,
 )
-from game.gambler import Gambler
-from game.player import Player
+from game.player.dealer import Dealer
+from game.player.gambler import Gambler
+from game.player.player import Player
 from game.strategy import Action
 
 
+@dataclasses.dataclass
+class GameConfig:
+    minimum_bet: float
+    maximum_bet: float
+    dealer_stop: int
+    push_on: int | None
+    blackjack: int
+
+    @classmethod
+    def from_yaml(cls, data: dict) -> Self:
+        minimum_bet = float(data["minimum-bet"])
+        maximum_bet = float(data["maximum-bet"])
+
+        push_on = int(data["push-on"]) if "push-on" in data else None
+        blackjack = int(data["blackjack"]) if "blackjack" in data else 21
+        dealer_stop = int(data["dealer-stop"]) if "dealer-stop" in data else 17
+
+        return cls(
+            minimum_bet=minimum_bet,
+            maximum_bet=maximum_bet,
+            push_on=push_on,
+            blackjack=blackjack,
+            dealer_stop=dealer_stop,
+        )
+
+
 class Game:
-    def __init__(self, gamblers: list[Gambler], dealer: Dealer, push_22: bool = False):
+    def __init__(self, gamblers: list[Gambler], dealer: Dealer, config: GameConfig):
         self._gamblers = gamblers
         self._validate_gamblers(gamblers)
 
         self._dealer = dealer
-        self._push_22 = push_22
+        self._config = config
 
         self._deck = Deck()
 
@@ -33,16 +66,23 @@ class Game:
         return [gambler for gambler in self._gamblers if gambler.is_busted]
 
     @classmethod
-    def from_yaml(cls, data: dict):
+    def from_yaml_file(cls, config_path: str):
+        if not Path(config_path).exists():
+            raise ConfigNotFoundException(config_path)
+
+        with open(config_path) as config_file:
+            data = yaml.load(config_file, Loader=Loader)
+
         gamblers = []
 
         for player_yaml in data["gamblers"]:
             gamblers.append(Gambler.from_yaml(player_yaml["gambler"]))
 
         dealer = Dealer.from_yaml(data["dealer"])
-        push_22 = data["game"]["push-22"]
 
-        return cls(gamblers, dealer, push_22)
+        config = GameConfig.from_yaml(data["game"])
+
+        return cls(gamblers, dealer, config)
 
     @staticmethod
     def _validate_gamblers(gamblers: list[Gambler]):
@@ -56,10 +96,9 @@ class Game:
         if DEALER_NAME in gambler_names:
             raise CantNameGamblerDealerException(dealer_name=DEALER_NAME)
 
-    @staticmethod
-    def _player_busted(player: Player) -> bool:
+    def _player_busted(self, player: Player) -> bool:
         val = player.get_value()
-        if val[0] > 21 and val[1] > 21:
+        if val[0] > self._config.blackjack and val[1] > self._config.blackjack:
             return True
 
         return False
@@ -87,10 +126,10 @@ class Game:
 
         return scores
 
-    def _core_loop(self, player: Player):
+    def _core_loop(self, action_func: Callable[[], Action], player: Player):
         logging.debug(f"{player.name} is playing..")
         while True:
-            action = player.play(dealer_value=self._dealer.get_value())
+            action = action_func()
 
             if action == Action.STAY:
                 logging.debug(f"{player.name} stays.")
@@ -109,10 +148,25 @@ class Game:
                 else:
                     continue
 
+    def _core_gambler_loop(self, gambler: Gambler):
+        def action_func():
+            return gambler.run_play_strategy(dealer_value=self._dealer.get_value())
+
+        self._core_loop(action_func, gambler)
+
+    def _core_dealer_loop(self, dealer: Dealer):
+        def action_func():
+            return dealer.run_play_strategy(dealer_stop=self._config.dealer_stop)
+
+        self._core_loop(action_func, dealer)
+
     def _collect_bets(self) -> dict:
         bets = {}
         for gambler in self.in_game_gamblers:
-            bet = gambler.run_bet_strategy()
+            bet = gambler.run_bet_strategy(
+                minimum_bet=self._config.minimum_bet,
+                maximum_bet=self._config.maximum_bet,
+            )
             bets[gambler] = bet
 
         return bets
@@ -134,7 +188,7 @@ class Game:
         for winning_gambler in winning_gamblers:
             winning_bet = bets[winning_gambler]
             self._dealer.take_away(winning_bet)
-            if winning_gambler.value_is_blackjack():
+            if winning_gambler.value_is_blackjack(self._config.blackjack):
                 amount = winning_bet + (winning_bet * 1.5)
                 logging.debug(
                     f"Blackjack! {winning_gambler} won {amount} from {self._dealer.name}."
@@ -191,11 +245,11 @@ class Game:
             self._deal_to_every_gambler()
 
             # Each player plays, one after another.
-            for player in self._gamblers:
-                self._core_loop(player)
+            for gambler in self._gamblers:
+                self._core_gambler_loop(gambler)
 
             # Then the dealer plays.
-            self._core_loop(self._dealer)
+            self._core_dealer_loop(self._dealer)
 
             if self._dealer.is_busted:
                 # Dealer is busted. Anyone who has not busted out wins.
