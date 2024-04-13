@@ -4,10 +4,6 @@ game:
 gamblers:
   - gambler:
       name: "Gambler 1"
-      bet-strategy: "testing"
       bankroll: 200
-  - gambler:
-      name: "Gambler 2"
-      bankroll: 300
 dealer:
   bankroll: 1000

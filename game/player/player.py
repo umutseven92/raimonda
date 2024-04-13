@@ -10,7 +10,7 @@ from game.exceptions import StrategyNotFoundException
 
 class Status(Enum):
     # The player is currently in play, in the game.
-    INGAME = auto()
+    IN_GAME = auto()
 
     # The player has busted, but is still in the game.
     BUSTED = auto()
@@ -25,8 +25,11 @@ T = TypeVar("T")
 class Player:
     name: str
     bankroll: float | None
-    status: Status = Status.INGAME
+    status: Status = Status.IN_GAME
     _cards: list[Card] = []
+    wins: int = 0
+    played: int = 0
+    bankroll_log: list[float]
 
     @property
     def is_busted(self):
@@ -34,7 +37,7 @@ class Player:
 
     @property
     def is_in_game(self):
-        return self.status == Status.INGAME
+        return self.status == Status.IN_GAME
 
     @property
     def is_bankrupt(self):
@@ -64,11 +67,21 @@ class Player:
     def __init__(self, name: str, bankroll: float):
         self.name = name
         self.bankroll = bankroll
+        self.bankroll_log = []
 
     def reset(self):
         self._cards = []
         if not self.is_bankrupt:
-            self.status = Status.INGAME
+            self.status = Status.IN_GAME
+
+    def increment_wins(self):
+        self.wins += 1
+
+    def increment_played(self):
+        self.played += 1
+
+    def add_to_bankroll_log(self):
+        self.bankroll_log.append(self.bankroll)
 
     def bust(self):
         self.status = Status.BUSTED
@@ -112,4 +125,4 @@ class Player:
         return self.name == other.name
 
     def __repr__(self):
-        return f"{self.name}, value {self.get_value()}"
+        return f"{self.name}, card values {self.get_value()}, bankroll {self.bankroll}"

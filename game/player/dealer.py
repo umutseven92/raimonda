@@ -20,7 +20,7 @@ class Dealer(Player):
 
     @staticmethod
     def _get_play_strategy(data: dict) -> DealerPlayStrategy:
-        return super()._get_strategy(
+        return Player._get_strategy(
             data, "play-strategy", default_dealer_play_strategy, user.play_strategies
         )
 

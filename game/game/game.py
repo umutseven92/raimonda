@@ -1,8 +1,7 @@
-import dataclasses
 import logging
 import time
 from pathlib import Path
-from typing import Self, Callable
+from typing import Callable
 
 import yaml
 from yaml import Loader
@@ -15,36 +14,12 @@ from game.exceptions import (
     CantNameGamblerDealerException,
     ConfigNotFoundException,
 )
+from game.game.game_config import GameConfig
+from game.game.game_result import GameResult
 from game.player.dealer import Dealer
 from game.player.gambler import Gambler
 from game.player.player import Player
 from game.strategy import Action
-
-
-@dataclasses.dataclass
-class GameConfig:
-    minimum_bet: float
-    maximum_bet: float
-    dealer_stop: int
-    push_on: int | None
-    blackjack: int
-
-    @classmethod
-    def from_yaml(cls, data: dict) -> Self:
-        minimum_bet = float(data["minimum-bet"])
-        maximum_bet = float(data["maximum-bet"])
-
-        push_on = int(data["push-on"]) if "push-on" in data else None
-        blackjack = int(data["blackjack"]) if "blackjack" in data else 21
-        dealer_stop = int(data["dealer-stop"]) if "dealer-stop" in data else 17
-
-        return cls(
-            minimum_bet=minimum_bet,
-            maximum_bet=maximum_bet,
-            push_on=push_on,
-            blackjack=blackjack,
-            dealer_stop=dealer_stop,
-        )
 
 
 class Game:
@@ -64,6 +39,10 @@ class Game:
     @property
     def busted_gamblers(self) -> list[Gambler]:
         return [gambler for gambler in self._gamblers if gambler.is_busted]
+
+    @property
+    def all_players(self) -> list[Player]:
+        return self._gamblers + [self._dealer]
 
     @classmethod
     def from_yaml_file(cls, config_path: str):
@@ -104,7 +83,7 @@ class Game:
         return False
 
     def _deal_to_every_gambler(self):
-        for gambler in self._gamblers:
+        for gambler in self.in_game_gamblers:
             gambler.deal_card(self._deck.get_card())
 
     def _reset_game(self):
@@ -117,14 +96,6 @@ class Game:
         for player in self._gamblers:
             player.reset()
         self._dealer.reset()
-
-    def _init_scores(self) -> dict[Player, int]:
-        scores: dict[Player, int] = {self._dealer: 0}
-
-        for player in self._gamblers:
-            scores[player] = 0
-
-        return scores
 
     def _core_loop(self, action_func: Callable[[], Action], player: Player):
         logging.debug(f"{player.name} is playing..")
@@ -218,13 +189,11 @@ class Game:
 
         return True
 
-    def play(self, game_amount: int) -> dict[Player, int]:
+    def play(self, game_amount: int) -> GameResult:
         logging.info(f"Playing {game_amount} games..")
         start = time.time()
 
         games_played = 0
-
-        scores = self._init_scores()
 
         for i in range(game_amount):
             self._reset_game()
@@ -232,6 +201,9 @@ class Game:
             if not self._check_if_game_can_go_on():
                 logging.info("Game cannot continue. Terminating early..")
                 break
+
+            for player in self.all_players:
+                player.add_to_bankroll_log()
 
             bets = self._collect_bets()
 
@@ -258,8 +230,9 @@ class Game:
                     winning_gamblers=self.in_game_gamblers,
                     losing_gamblers=self.busted_gamblers,
                 )
-                # for ingame_player in self.in_game_gamblers:
-                #     scores[ingame_player] += 1
+
+                for in_game_gambler in self.in_game_gamblers:
+                    in_game_gambler.increment_wins()
             else:
                 # Dealer stays. Everyone else with score less than the dealer loses, everyone with a score higher
                 # than the dealer wins. Rest get their money back.
@@ -280,10 +253,13 @@ class Game:
                     losing_gamblers=losers + self.busted_gamblers,
                 )
 
-                # scores[self._dealer] += 1
-                # for ingame_player in self.in_game_gamblers:
-                #     if ingame_player.get_value() > self._dealer.get_value():
-                #         scores[ingame_player] += 1
+                self._dealer.increment_wins()
+                for winning_gambler in winners:
+                    if winning_gambler.get_value() > self._dealer.get_value():
+                        winning_gambler.increment_wins()
+
+            for in_game_gambler in self.in_game_gamblers + [self._dealer]:
+                in_game_gambler.increment_played()
 
             self._check_for_bankruptcy()
 
@@ -292,4 +268,6 @@ class Game:
         end = time.time()
         logging.info(f"Played {games_played} games. Took {(end - start):.4f} seconds.")
 
-        return scores
+        return GameResult(
+            actual_played=games_played, gamblers=self._gamblers, dealer=self._dealer
+        )

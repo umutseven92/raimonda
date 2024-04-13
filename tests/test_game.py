@@ -9,7 +9,7 @@ from game.exceptions import (
     CantNameGamblerDealerException,
     ConfigNotFoundException,
 )
-from game.game import Game
+from game.game.game import Game
 
 
 class TestGame:
@@ -38,30 +38,11 @@ class TestGame:
 
     def test_can_play(self):
         game = Game.from_yaml_file("resources/test_config.yaml")
-        game.play(100)
-        # game_amount = 1
-        # player(
-        #     name="Dealer",
-        #     bankroll=200,
-        #     play_strategy=STAND_EVERYTIME_STRATEGY,
-        # )
-        # players = [
-        #     Player(
-        #         name="Test Player 1",
-        #         bankroll=200,
-        #         play_strategy=STAND_EVERYTIME_STRATEGY,
-        #     ),
-        #     Player(
-        #         name="Test Player 2",
-        #         bankroll=200,
-        #         play_strategy=STAND_EVERYTIME_STRATEGY,
-        #     ),
-        # ]
-        # game = Game(gamblers=players, game_amount=game_amount)
-        #
-        # scores = game.play()
-        #
-        # # Scores include the players, and one dealer.
-        # assert len(scores.keys()) == len(players) + 1
-        #
-        # assert all([val <= 100 for val in scores.values()])
+        result = game.play(10)
+
+        assert result.actual_played == len(result.dealer.bankroll_log)
+        assert result.actual_played >= result.dealer.wins
+
+        for gambler in result.gamblers:
+            assert result.actual_played == len(gambler.bankroll_log)
+            assert result.actual_played >= gambler.wins

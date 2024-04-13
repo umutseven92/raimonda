@@ -16,7 +16,7 @@ gamblers:
       bankroll: 200
   - gambler:
       name: "Gambler 2"
+      bankroll: 150
 # Configuration for the dealer. The dealer has no bet strategy.
 dealer:
-  play-strategy: "user_strat"
   bankroll: 1000

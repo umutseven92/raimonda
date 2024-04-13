@@ -19,20 +19,20 @@ class Gambler(Player):
     def from_yaml(cls, data: dict):
         val = super().from_data(name=data["name"], data=data)
 
-        val.bet_strategy = cls._get_bet_strategy(data)
         val.play_strategy = cls._get_play_strategy(data)
+        val.bet_strategy = cls._get_bet_strategy(data)
 
         return val
 
     @staticmethod
     def _get_bet_strategy(data: dict) -> BetStrategy:
-        return super()._get_strategy(
+        return Player._get_strategy(
             data, "bet-strategy", minimum_bet_strategy, user.bet_strategies
         )
 
     @staticmethod
     def _get_play_strategy(data: dict) -> GamblerPlayStrategy:
-        return super()._get_strategy(
+        return Player._get_strategy(
             data, "play-strategy", default_gambler_play_strategy, user.play_strategies
         )
 
