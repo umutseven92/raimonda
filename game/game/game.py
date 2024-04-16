@@ -44,6 +44,10 @@ class Game:
     def all_players(self) -> list[Player]:
         return self._gamblers + [self._dealer]
 
+    @property
+    def all_in_game_players(self) -> list[Player]:
+        return self.in_game_gamblers + [self._dealer]
+
     @classmethod
     def from_yaml_file(cls, config_path: str):
         if not Path(config_path).exists():
@@ -127,7 +131,7 @@ class Game:
 
     def _core_dealer_loop(self, dealer: Dealer):
         def action_func():
-            return dealer.run_play_strategy(dealer_stop=self._config.dealer_stop)
+            return dealer.run_play_strategy()
 
         self._core_loop(action_func, dealer)
 
@@ -175,9 +179,15 @@ class Game:
                 winning_gambler.pay(amount)
 
     def _check_for_bankruptcy(self):
-        for player in self._gamblers + [self._dealer]:
-            if player.bankroll <= 0:
-                player.bankrupt()
+        for gambler in self.in_game_gamblers:
+            if gambler.bankroll <= self._config.minimum_bet:
+                # Gamblers are bankrupt if their bankroll is lower than the minimum bet, which means they won't be able
+                # to continue playing.
+                gambler.bankrupt()
+
+        if self._dealer.bankroll <= 0:
+            # The dealer is bankrupt if they run out of money.
+            self._dealer.bankrupt()
 
     def _check_if_game_can_go_on(self) -> bool:
         if self._dealer.is_bankrupt:
@@ -258,8 +268,8 @@ class Game:
                     if winning_gambler.get_value() > self._dealer.get_value():
                         winning_gambler.increment_wins()
 
-            for in_game_gambler in self.in_game_gamblers + [self._dealer]:
-                in_game_gambler.increment_played()
+            for in_game_player in self.all_in_game_players:
+                in_game_player.increment_played()
 
             self._check_for_bankruptcy()
 

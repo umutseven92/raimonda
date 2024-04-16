@@ -1,3 +1,4 @@
+import os.path
 from unittest.mock import MagicMock
 
 import pytest
@@ -10,6 +11,7 @@ from game.exceptions import (
     ConfigNotFoundException,
 )
 from game.game.game import Game
+from .helpers import TEST_RESOURCES_DIR
 
 
 class TestGame:
@@ -37,7 +39,7 @@ class TestGame:
             Game(gamblers=[gambler_mock], dealer=MagicMock(), config=MagicMock())
 
     def test_can_play(self):
-        game = Game.from_yaml_file("resources/test_config.yaml")
+        game = Game.from_yaml_file(os.path.join(TEST_RESOURCES_DIR, "test_config.yaml"))
         result = game.play(10)
 
         assert result.actual_played == len(result.dealer.bankroll_log)

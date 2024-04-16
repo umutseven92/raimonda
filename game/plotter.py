@@ -23,9 +23,10 @@ class GamePlotter:
         dealer = self.game_result.dealer
         gamblers = self.game_result.gamblers
 
-        player_labels = [f"{dealer.name} ({dealer.bankroll}B)"] + [
-            f"{gambler.name} ({gambler.bankroll}B)" for gambler in gamblers
+        player_labels = [f"{dealer.name}\nBankroll: {dealer.bankroll}"] + [
+            f"{gambler.name}\nBankroll: {gambler.bankroll}" for gambler in gamblers
         ]
+
         player_wins = [dealer.wins] + [gambler.wins for gambler in gamblers]
         player_losses = [dealer.played - dealer.wins] + [
             gambler.played - gambler.wins for gambler in gamblers
@@ -56,7 +57,10 @@ class GamePlotter:
         ax.set_title(title)
         ax.legend(loc="upper right")
 
-        figure_path = f"{SCORES_DIR}/scores_{self.game_amount}_{str(datetime.datetime.utcnow()).replace(' ', '_')}.png"
+        figure_path = (
+            f"{SCORES_DIR}/scores_"
+            f"{self.game_amount}_{str(datetime.datetime.utcnow()).replace(' ', '_')}.png"
+        )
         self._save_plot(figure_path)
 
     def draw_bankroll(self):
@@ -84,7 +88,10 @@ class GamePlotter:
 
         ax.legend(loc="upper right")
 
-        figure_path = f"{BANKROLL_DIR}/bankroll_{self.game_amount}_{str(datetime.datetime.utcnow()).replace(' ', '_')}.png"
+        figure_path = (
+            f"{BANKROLL_DIR}/bankroll_"
+            f"{self.game_amount}_{str(datetime.datetime.utcnow()).replace(' ', '_')}.png"
+        )
         self._save_plot(figure_path)
 
     @staticmethod

@@ -5,7 +5,7 @@ from typing import Self, TypeVar
 
 from game.constants import CardValues
 from game.deck.card import Card
-from game.exceptions import StrategyNotFoundException
+from game.exceptions import StrategyNotFoundException, NotEnoughBankrollException
 
 
 class Status(Enum):
@@ -24,7 +24,7 @@ T = TypeVar("T")
 
 class Player:
     name: str
-    bankroll: float | None
+    bankroll: float
     status: Status = Status.IN_GAME
     _cards: list[Card] = []
     wins: int = 0
@@ -45,7 +45,7 @@ class Player:
 
     @classmethod
     def from_data(cls, name: str, data: dict) -> Self:
-        bankroll = data["bankroll"] if "bankroll" in data else None
+        bankroll = data["bankroll"]
 
         return cls(name=name, bankroll=bankroll)
 
@@ -53,6 +53,8 @@ class Player:
     def _get_strategy(
         data: dict, name: str, default_strategy: T, module: ModuleType
     ) -> T:
+        func: T | None
+
         if name not in data:
             func = default_strategy
         else:
@@ -61,6 +63,8 @@ class Player:
 
             if func is None:
                 raise StrategyNotFoundException(function_name)
+
+        assert func is not None
 
         return func
 
@@ -97,6 +101,11 @@ class Player:
         self.bankroll += amount
 
     def take_away(self, amount: float):
+        if self.bankroll < amount:
+            # Since bet strategies are defined dynamically, we have to do the checks here.
+            # The user is responsible for making sure their bankroll is large enough to make a bet.
+            raise NotEnoughBankrollException(self.bankroll, amount)
+
         self.bankroll -= amount
 
     def get_value(self) -> CardValues:

@@ -1,8 +1,4 @@
-from game.player import Player
-from game.strategy import Action
+import os
 
-
-def player_to_test() -> Player:
-    return Player(
-        play_strategy=lambda x, y: Action.HIT, bankroll=100, name="Test Player"
-    )
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+TEST_RESOURCES_DIR = os.path.join(TEST_DIR, "resources")

@@ -1,18 +1,16 @@
 game:
   minimum-bet: 5
   maximum-bet: 200
-  # Which value the dealer stops. Default value is 17.
-  # dealer-stop: 17
-  # Whether to push on a value, most commonly 22. Default value is None.
+  # Whether to push on a value. In free bet blackjack this is most commonly 22. Default value is None.
   # push-on: 22
   # Blackjack value. Default value is 21.
   # blackjack: 21
 # Configuration for gamblers; the players playing against the dealer.
 gamblers:
   - gambler:
-      # Name of the gambler. The name has to be unique, and it can't be Dealer.
+      # Name of the gambler. The name has to be unique among gamblers, and it can't be "Dealer". Required.
       name: "Gambler 1"
-      # Bankroll of the gambler. If left empty, it will be counted as infinite, and the gambler will never go bankrupt.
+      # Bankroll of the gambler. Required.
       bankroll: 200
   - gambler:
       name: "Gambler 2"

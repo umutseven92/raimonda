@@ -1,11 +1,17 @@
+import pytest
 import yaml
 from yaml import Loader
 
 from game.constants import DEALER_NAME
 from game.deck.card import Card, Suit, Rank
+from game.exceptions import NotEnoughBankrollException
 from game.player.dealer import Dealer
 from game.player.gambler import Gambler
-from tests.helpers import player_to_test
+from game.player.player import Player
+
+
+def player_to_test() -> Player:
+    return Player("Test Player", 200)
 
 
 class TestPlayer:
@@ -17,6 +23,7 @@ class TestPlayer:
                 bankroll: 200
             - gambler:
                 name: "Player 2"
+                bankroll: 150
         """
 
         loaded = yaml.load(yaml_val, Loader=Loader)
@@ -30,7 +37,7 @@ class TestPlayer:
         assert gamblers[0].bankroll == 200
 
         assert gamblers[1].name == "Player 2"
-        assert gamblers[1].bankroll is None
+        assert gamblers[1].bankroll == 150
 
     def test_can_load_dealer_from_yaml(self):
         yaml_val = """
@@ -60,3 +67,9 @@ class TestPlayer:
         player2 = player_to_test()
 
         assert player == player2
+
+    def test_take_away_raises_exception_on_insufficient_bankroll(self):
+        player = player_to_test()
+
+        with pytest.raises(NotEnoughBankrollException):
+            player.take_away(player.bankroll + 1)

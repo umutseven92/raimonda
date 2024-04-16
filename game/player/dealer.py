@@ -24,5 +24,5 @@ class Dealer(Player):
             data, "play-strategy", default_dealer_play_strategy, user.play_strategies
         )
 
-    def run_play_strategy(self, dealer_stop: int) -> Action:
-        return self.play_strategy(self.get_value(), dealer_stop)
+    def run_play_strategy(self) -> Action:
+        return self.play_strategy(self.get_value())
