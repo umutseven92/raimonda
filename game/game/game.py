@@ -101,18 +101,45 @@ class Game:
             player.reset()
         self._dealer.reset()
 
-    def _core_loop(self, action_func: Callable[[], Action], player: Player):
+    def _get_allowed_gambler_actions(
+        self, gambler: Gambler, nth_card: int
+    ) -> list[Action]:
+        actions = [Action.HIT, Action.STAY]
+        value = gambler.get_value()
+
+        if nth_card == 0 and (
+            value[0] in self._config.double_down_allowed
+            or value[1] in self._config.double_down_allowed
+        ):
+            actions.append(Action.DOUBLE_DOWN)
+
+        return actions
+
+    def _core_loop(
+        self, action_func: Callable[[int], Action], player: Player, bets: dict
+    ):
         logging.debug(f"{player.name} is playing..")
+
+        card_index = 0
         while True:
-            action = action_func()
+            action = action_func(card_index)
 
             if action == Action.STAY:
                 logging.debug(f"{player.name} stays.")
                 break
-            elif action == Action.HIT:
-                logging.debug(f"{player.name} hits.")
+            elif action == Action.HIT or action == Action.DOUBLE_DOWN:
+                if action == Action.HIT:
+                    logging.debug(f"{player.name} hits.")
+                else:
+                    logging.debug(f"{player.name} doubles down.")
+
+                    # Double the bet of the current player.
+                    current_bet = bets[player]
+                    player.take_away(current_bet)
+                    bets[player] += current_bet
 
                 player.deal_card(self._deck.get_card())
+                card_index += 1
 
                 logging.debug(f"{player.name}'s new value is {player.get_value()}.")
 
@@ -120,20 +147,26 @@ class Game:
                     logging.debug(f"{player.name} busted.")
                     player.bust()
                     break
+                elif action == Action.DOUBLE_DOWN:
+                    # The player only gets one card after doubling down.
+                    break
                 else:
                     continue
 
-    def _core_gambler_loop(self, gambler: Gambler):
-        def action_func():
-            return gambler.run_play_strategy(dealer_value=self._dealer.get_value())
+    def _core_gambler_loop(self, gambler: Gambler, bets: dict):
+        def action_func(nth_card: int):
+            return gambler.run_play_strategy(
+                dealer_value=self._dealer.get_value(),
+                allowed_actions=self._get_allowed_gambler_actions(gambler, nth_card),
+            )
 
-        self._core_loop(action_func, gambler)
+        self._core_loop(action_func, gambler, bets)
 
-    def _core_dealer_loop(self, dealer: Dealer):
-        def action_func():
+    def _core_dealer_loop(self, dealer: Dealer, bets: dict):
+        def action_func(_):
             return dealer.run_play_strategy()
 
-        self._core_loop(action_func, dealer)
+        self._core_loop(action_func, dealer, bets)
 
     def _collect_bets(self) -> dict:
         bets = {}
@@ -171,7 +204,7 @@ class Game:
 
                 winning_gambler.pay(amount)
             else:
-                amount = winning_bet * 2
+                amount = winning_bet + (winning_bet * 0.5)
                 logging.debug(
                     f"{winning_gambler} won {amount} from {self._dealer.name}."
                 )
@@ -228,10 +261,10 @@ class Game:
 
             # Each player plays, one after another.
             for gambler in self._gamblers:
-                self._core_gambler_loop(gambler)
+                self._core_gambler_loop(gambler, bets)
 
             # Then the dealer plays.
-            self._core_dealer_loop(self._dealer)
+            self._core_dealer_loop(self._dealer, bets)
 
             if self._dealer.is_busted:
                 # Dealer is busted. Anyone who has not busted out wins.

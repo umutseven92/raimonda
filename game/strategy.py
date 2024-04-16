@@ -9,9 +9,10 @@ DEALER_STOP: Final[int] = 17
 class Action(Enum):
     HIT = auto()
     STAY = auto()
+    DOUBLE_DOWN = auto()
 
 
-GamblerPlayStrategy = Callable[[CardValues, CardValues], Action]
+GamblerPlayStrategy = Callable[[CardValues, CardValues, list[Action]], Action]
 DealerPlayStrategy = Callable[[CardValues], Action]
 BetStrategy = Callable[[float, float, float], float]
 
@@ -25,7 +26,7 @@ def default_dealer_play_strategy(dealer_val: CardValues) -> Action:
 
 
 def default_gambler_play_strategy(
-    player_val: CardValues, dealer_val: CardValues
+    player_val: CardValues, dealer_val: CardValues, allowed_actions: list[Action]
 ) -> Action:
     # TODO: Optimal gambler strategy.
     return Action.STAY

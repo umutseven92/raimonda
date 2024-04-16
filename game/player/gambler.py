@@ -1,6 +1,7 @@
 import user.bet_strategies
 import user.play_strategies
 from game.constants import CardValues
+from game.exceptions import InvalidBetException, InvalidActionException
 from game.player.player import Player
 from game.strategy import (
     BetStrategy,
@@ -38,8 +39,17 @@ class Gambler(Player):
 
     def run_bet_strategy(self, minimum_bet: float, maximum_bet: float) -> float:
         bet = self.bet_strategy(self.bankroll, minimum_bet, maximum_bet)
+        if bet < minimum_bet or bet > maximum_bet:
+            raise InvalidBetException(bet, minimum_bet, maximum_bet)
+
         self.take_away(bet)
         return bet
 
-    def run_play_strategy(self, dealer_value: CardValues) -> Action:
-        return self.play_strategy(self.get_value(), dealer_value)
+    def run_play_strategy(
+        self, dealer_value: CardValues, allowed_actions: list[Action]
+    ) -> Action:
+        action = self.play_strategy(self.get_value(), dealer_value, allowed_actions)
+        if action not in allowed_actions:
+            raise InvalidActionException(action, allowed_actions)
+
+        return action

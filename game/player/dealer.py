@@ -1,7 +1,13 @@
+from typing import Final
+
 import user.play_strategies
 from game.constants import DEALER_NAME
+from game.exceptions import InvalidActionException
 from game.player.player import Player
 from game.strategy import DealerPlayStrategy, Action, default_dealer_play_strategy
+
+# The dealer can only hit or stay.
+ALLOWED_ACTIONS: Final[list[Action]] = [Action.STAY, Action.HIT]
 
 
 class Dealer(Player):
@@ -25,4 +31,9 @@ class Dealer(Player):
         )
 
     def run_play_strategy(self) -> Action:
-        return self.play_strategy(self.get_value())
+        action = self.play_strategy(self.get_value())
+
+        if action not in ALLOWED_ACTIONS:
+            raise InvalidActionException(action, ALLOWED_ACTIONS)
+
+        return action

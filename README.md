@@ -40,7 +40,7 @@ respectively. The first element of the tuple is the soft value, and the second v
 Example gambler play strategy:
 
 ```python
-def example_gambler_play_strategy(player_val: CardValues, dealer_val: CardValues) -> Action:
+def example_gambler_play_strategy(player_val: CardValues, dealer_val: CardValues, can_double_down: bool) -> Action:
     """Example gambler strategy."""
 
     if player_val[0] > dealer_val[0] and player_val[1] > dealer_val[1]:

@@ -1,10 +1,16 @@
 game:
   minimum-bet: 5
   maximum-bet: 200
+  # When can the players double down. To enable for all values, set it to *. If undefined, double down is not allowed.
+  double-down-allowed: [ 9,10,11 ]
   # Whether to push on a value. In free bet blackjack this is most commonly 22. Default value is None.
   # push-on: 22
   # Blackjack value. Default value is 21.
   # blackjack: 21
+  # How much blackjack pays. Default value is 1.5 (3:2).
+  # blackjack-pays: 1.5
+  # How much a regular win pays. Default value is 0.5 (1:2).
+  # win-pays: 0.5
 # Configuration for gamblers; the players playing against the dealer.
 gamblers:
   - gambler:

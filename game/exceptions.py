@@ -1,4 +1,4 @@
-from game.strategy import GamblerPlayStrategy
+from game.strategy import GamblerPlayStrategy, Action
 
 
 class ConfigNotFoundException(Exception):
@@ -40,3 +40,25 @@ class StrategyWrongTypeException(Exception):
 class NotEnoughBankrollException(Exception):
     def __init__(self, bankroll: float, attempted_bet: float):
         super().__init__(f"Not enough bankroll ({bankroll} for bet {attempted_bet}.")
+
+
+class InvalidBetException(Exception):
+    def __init__(self, bet: float, minimum_bet: float, maximum_bet: float):
+        super().__init__(
+            f"Invalid bet {bet}; bet must be between {minimum_bet} and {maximum_bet}."
+        )
+
+
+class InvalidDoubleDownConfigException(Exception):
+    def __init__(self):
+        super().__init__(
+            "Invalid `double-down-allowed` configuration. Make sure the value is either `*`, or a list of numbers "
+            "between 1 (inclusive) and 21 (inclusive)."
+        )
+
+
+class InvalidActionException(Exception):
+    def __init__(self, action: Action, allowed_actions: list[Action]):
+        super().__init__(
+            f"Invalid action {action}, allowed actions are {allowed_actions}."
+        )
