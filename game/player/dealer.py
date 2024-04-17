@@ -11,16 +11,17 @@ ALLOWED_ACTIONS: Final[list[Action]] = [Action.STAY, Action.HIT]
 
 
 class Dealer(Player):
-    play_strategy: DealerPlayStrategy
+    def __init__(
+        self,
+        bankroll: float,
+        play_strategy: DealerPlayStrategy = default_dealer_play_strategy,
+    ):
+        self.play_strategy = play_strategy
+        super().__init__(DEALER_NAME, bankroll)
 
     @classmethod
     def from_yaml(cls, data: dict):
-        val = cls.from_data(
-            name=DEALER_NAME,
-            data=data,
-        )
-
-        val.play_strategy = cls._get_play_strategy(data)
+        val = cls(bankroll=data["bankroll"], play_strategy=cls._get_play_strategy(data))
 
         return val
 

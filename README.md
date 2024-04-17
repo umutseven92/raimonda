@@ -1,4 +1,4 @@
-# Raimonda
+# Raimonda ♥️♠️♦️♣️
 
 A simple-to-use, configurable Blackjack simulator, written in Python.
 

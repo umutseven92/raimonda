@@ -13,15 +13,25 @@ from game.strategy import (
 
 
 class Gambler(Player):
-    bet_strategy: BetStrategy
-    play_strategy: GamblerPlayStrategy
+    def __init__(
+        self,
+        name: str,
+        bankroll: float,
+        bet_strategy: BetStrategy,
+        play_strategy: GamblerPlayStrategy,
+    ):
+        self.bet_strategy = bet_strategy
+        self.play_strategy = play_strategy
+        super().__init__(name, bankroll)
 
     @classmethod
     def from_yaml(cls, data: dict):
-        val = super().from_data(name=data["name"], data=data)
-
-        val.play_strategy = cls._get_play_strategy(data)
-        val.bet_strategy = cls._get_bet_strategy(data)
+        val = cls(
+            name=data["name"],
+            bankroll=data["bankroll"],
+            bet_strategy=cls._get_bet_strategy(data),
+            play_strategy=cls._get_play_strategy(data),
+        )
 
         return val
 

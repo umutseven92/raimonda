@@ -1,7 +1,7 @@
 import logging
 from enum import Enum, auto
 from types import ModuleType
-from typing import Self, TypeVar
+from typing import TypeVar
 
 from game.constants import CardValues
 from game.deck.card import Card
@@ -23,13 +23,14 @@ T = TypeVar("T")
 
 
 class Player:
-    name: str
-    bankroll: float
-    status: Status = Status.IN_GAME
-    _cards: list[Card] = []
-    wins: int = 0
-    played: int = 0
-    bankroll_log: list[float]
+    def __init__(self, name: str, bankroll: float):
+        self.name = name
+        self.bankroll = bankroll
+        self.status: Status = Status.IN_GAME
+        self._cards: list[Card] = []
+        self.bankroll_log = [bankroll]
+        self.wins = 0
+        self.played = 0
 
     @property
     def is_busted(self):
@@ -42,12 +43,6 @@ class Player:
     @property
     def is_bankrupt(self):
         return self.status == Status.BANKRUPT
-
-    @classmethod
-    def from_data(cls, name: str, data: dict) -> Self:
-        bankroll = data["bankroll"]
-
-        return cls(name=name, bankroll=bankroll)
 
     @staticmethod
     def _get_strategy(
@@ -67,11 +62,6 @@ class Player:
         assert func is not None
 
         return func
-
-    def __init__(self, name: str, bankroll: float):
-        self.name = name
-        self.bankroll = bankroll
-        self.bankroll_log = []
 
     def reset(self):
         self._cards = []

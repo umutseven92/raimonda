@@ -81,7 +81,7 @@ class GamePlotter:
 
         for player in self.game_result.gamblers + [self.game_result.dealer]:
             ax.plot(
-                np.arange(0, self.game_result.actual_played),
+                np.arange(0, self.game_result.actual_played + 1),
                 player.bankroll_log,
                 label=player.name,
             )

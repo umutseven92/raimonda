@@ -18,5 +18,5 @@ class TestDeck:
         assert card.card_value() == (10, 10)
 
     def test_can_generate_deck(self):
-        deck = Deck()
+        deck = Deck.shuffled_cards()
         assert deck.card_amount() == 52

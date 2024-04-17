@@ -23,14 +23,16 @@ from game.strategy import Action
 
 
 class Game:
-    def __init__(self, gamblers: list[Gambler], dealer: Dealer, config: GameConfig):
+    def __init__(
+        self, gamblers: list[Gambler], dealer: Dealer, config: GameConfig, deck: Deck
+    ):
         self._gamblers = gamblers
         self._validate_gamblers(gamblers)
 
         self._dealer = dealer
         self._config = config
 
-        self._deck = Deck()
+        self._deck = deck
 
     @property
     def in_game_gamblers(self) -> list[Gambler]:
@@ -65,7 +67,7 @@ class Game:
 
         config = GameConfig.from_yaml(data["game"])
 
-        return cls(gamblers, dealer, config)
+        return cls(gamblers, dealer, config, Deck.shuffled_cards())
 
     @staticmethod
     def _validate_gamblers(gamblers: list[Gambler]):
@@ -93,7 +95,7 @@ class Game:
     def _reset_game(self):
         logging.debug("Resetting game..")
 
-        self._deck = Deck()
+        self._deck = Deck.shuffled_cards()
         self._reset_players()
 
     def _reset_players(self):
@@ -239,14 +241,9 @@ class Game:
         games_played = 0
 
         for i in range(game_amount):
-            self._reset_game()
-
             if not self._check_if_game_can_go_on():
                 logging.info("Game cannot continue. Terminating early..")
                 break
-
-            for player in self.all_players:
-                player.add_to_bankroll_log()
 
             bets = self._collect_bets()
 
@@ -304,9 +301,13 @@ class Game:
             for in_game_player in self.all_in_game_players:
                 in_game_player.increment_played()
 
+            for player in self.all_players:
+                player.add_to_bankroll_log()
+
             self._check_for_bankruptcy()
 
             games_played += 1
+            self._reset_game()
 
         end = time.time()
         logging.info(f"Played {games_played} games. Took {(end - start):.4f} seconds.")

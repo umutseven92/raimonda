@@ -4,11 +4,6 @@ from game.exceptions import InvalidDoubleDownConfigException
 from game.game.game_config import GameConfig
 
 
-@pytest.fixture
-def default_config_dict() -> dict:
-    return {"minimum-bet": 5, "maximum-bet": 100}
-
-
 class TestGameConfig:
     def test_can_parse_double_down_default(self, default_config_dict: dict):
         config = GameConfig.from_yaml(default_config_dict)

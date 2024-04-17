@@ -6,8 +6,16 @@ from game.deck.card import Card, Suit, Rank
 class Deck:
     _cards: list[Card]
 
-    def __init__(self):
-        self._cards = self._generate_deck()
+    @classmethod
+    def shuffled_cards(cls):
+        return cls(cards=Deck._generate_deck())
+
+    @classmethod
+    def with_cards(cls, cards: list[Card]):
+        return cls(cards=cards)
+
+    def __init__(self, cards: list[Card]):
+        self._cards = cards
 
     def get_card(self) -> Card:
         return self._cards.pop()
