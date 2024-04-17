@@ -15,6 +15,7 @@ from game.game.game import Game
 from game.game.game_config import GameConfig
 from game.player.dealer import Dealer
 from game.player.gambler import Gambler
+from game.player.round_result import RoundResult
 from game.strategy import Action
 
 
@@ -53,9 +54,10 @@ class TestGame:
             )
 
     @pytest.mark.parametrize(
-        "cards,expected_dealer_bankroll,expected_dealer_bankroll_log,expected_dealer_win,expected_dealer_played,expected_gambler_bankroll,expected_gambler_bankroll_log,expected_gambler_win,expected_gambler_played",
+        "game_amount,cards,expected_dealer_bankroll_log,expected_dealer_round_log,expected_gambler_bankroll_log,expected_gambler_round_log",
         [
             (  # Dealer win
+                1,
                 [
                     Card(Rank.TWO, Suit.SPADES),  # Gambler, 2
                     Card(Rank.THREE, Suit.CLUBS),  # Dealer, 3
@@ -63,16 +65,13 @@ class TestGame:
                     Card(Rank.TEN, Suit.CLUBS),  # Dealer, 13
                     Card(Rank.FOUR, Suit.SPADES),  # Dealer, 17, dealer stays
                 ],
-                105,  # Dealer bankroll
                 [100, 105],  # Dealer bankroll log
-                1,  # Dealer wins
-                1,  # Dealer played
-                15,  # Gambler bankroll
+                [RoundResult.WIN],  # Dealer results
                 [20, 15],  # Gambler bankroll log
-                0,  # Gambler wins
-                1,  # Gambler played
+                [RoundResult.LOST],  # Gambler results
             ),
             (  # Push
+                1,
                 [
                     Card(Rank.TEN, Suit.SPADES),  # Gambler, 10
                     Card(Rank.FIVE, Suit.CLUBS),  # Dealer, 5
@@ -80,29 +79,22 @@ class TestGame:
                     Card(Rank.TWO, Suit.CLUBS),  # Dealer, 7
                     Card(Rank.QUEEN, Suit.SPADES),  # Dealer, 17, dealer stays
                 ],
-                100,  # Dealer bankroll
                 [100, 100],  # Dealer bankroll log
-                0,  # Dealer wins
-                1,  # Dealer played
-                20,  # Gambler bankroll
+                [RoundResult.WIN],  # Dealer wins
                 [20, 20],  # Gambler bankroll log
-                0,  # Gambler wins
-                1,  # Gambler played
+                [RoundResult.PUSH],  # Gambler wins
             ),
         ],
     )
     def test_can_play(
         self,
         default_game_config: GameConfig,
+        game_amount: int,
         cards: list[Card],
-        expected_dealer_bankroll: float,
         expected_dealer_bankroll_log: list[float],
-        expected_dealer_win: int,
-        expected_dealer_played: int,
-        expected_gambler_bankroll: float,
+        expected_dealer_round_log: list[RoundResult],
         expected_gambler_bankroll_log: list[float],
-        expected_gambler_win: int,
-        expected_gambler_played: int,
+        expected_gambler_round_log: list[RoundResult],
     ):
         def minimum_bet_strat(
             _bankroll: float, minimum_bet: float, _maximum_bet: float
@@ -134,16 +126,15 @@ class TestGame:
             deck=preset_deck,
         )
 
-        result = game.play(1)
+        result = game.play(game_amount=game_amount)
         gambler = result.gamblers[0]
         dealer = result.dealer
 
-        assert dealer.bankroll == expected_dealer_bankroll
+        assert result.actual_played == game_amount
+        assert dealer.bankroll == expected_dealer_bankroll_log[-1]
         assert dealer.bankroll_log == expected_dealer_bankroll_log
-        assert dealer.wins == expected_dealer_win
-        assert dealer.played == expected_dealer_played
+        assert dealer.result_log == expected_dealer_round_log
 
-        assert gambler.bankroll == expected_gambler_bankroll
+        assert gambler.bankroll == expected_gambler_bankroll_log[-1]
         assert gambler.bankroll_log == expected_gambler_bankroll_log
-        assert gambler.wins == expected_gambler_win
-        assert gambler.played == expected_gambler_played
+        assert gambler.result_log == expected_gambler_round_log

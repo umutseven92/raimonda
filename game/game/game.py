@@ -1,7 +1,6 @@
 import logging
 import time
 from pathlib import Path
-from typing import Callable
 
 import yaml
 from yaml import Loader
@@ -14,11 +13,13 @@ from game.exceptions import (
     CantNameGamblerDealerException,
     ConfigNotFoundException,
 )
+from game.game.bet_manager import BetManager
 from game.game.game_config import GameConfig
 from game.game.game_result import GameResult
 from game.player.dealer import Dealer
 from game.player.gambler import Gambler
 from game.player.player import Player
+from game.player.round_result import RoundResult
 from game.strategy import Action
 
 
@@ -33,6 +34,11 @@ class Game:
         self._config = config
 
         self._deck = deck
+        self._bet_manager = BetManager(
+            minimum_bet=self._config.minimum_bet,
+            maximum_bet=self._config.maximum_bet,
+            blackjack_value=self._config.blackjack,
+        )
 
     @property
     def in_game_gamblers(self) -> list[Gambler]:
@@ -41,6 +47,10 @@ class Game:
     @property
     def busted_gamblers(self) -> list[Gambler]:
         return [gambler for gambler in self._gamblers if gambler.is_busted]
+
+    @property
+    def bankrupt_gamblers(self) -> list[Gambler]:
+        return [gambler for gambler in self._gamblers if gambler.is_bankrupt]
 
     @property
     def all_players(self) -> list[Player]:
@@ -117,101 +127,67 @@ class Game:
 
         return actions
 
-    def _core_loop(
-        self, action_func: Callable[[int], Action], player: Player, bets: dict
-    ):
-        logging.debug(f"{player.name} is playing..")
+    def _core_gambler_loop(self, gambler: Gambler):
+        logging.debug(f"{gambler.name} is playing..")
 
         card_index = 0
         while True:
-            action = action_func(card_index)
+            action = gambler.run_play_strategy(
+                dealer_value=self._dealer.get_value(),
+                allowed_actions=self._get_allowed_gambler_actions(gambler, card_index),
+            )
 
             if action == Action.STAY:
-                logging.debug(f"{player.name} stays.")
+                logging.debug(f"{gambler.name} stays.")
                 break
             elif action == Action.HIT or action == Action.DOUBLE_DOWN:
                 if action == Action.HIT:
-                    logging.debug(f"{player.name} hits.")
+                    logging.debug(f"{gambler.name} hits.")
                 else:
-                    logging.debug(f"{player.name} doubles down.")
+                    logging.debug(f"{gambler.name} doubles down.")
 
-                    # Double the bet of the current player.
-                    current_bet = bets[player]
-                    player.take_away(current_bet)
-                    bets[player] += current_bet
+                    # Double the bet of the current gambler.
+                    current_bet = self._bet_manager.bets[gambler]
+                    gambler.take_away(current_bet)
+                    self._bet_manager.bets[gambler] += current_bet
 
-                player.deal_card(self._deck.get_card())
+                gambler.deal_card(self._deck.get_card())
                 card_index += 1
 
-                logging.debug(f"{player.name}'s new value is {player.get_value()}.")
+                logging.debug(f"{gambler.name}'s new value is {gambler.get_value()}.")
 
-                if self._player_busted(player):
-                    logging.debug(f"{player.name} busted.")
-                    player.bust()
+                if self._player_busted(gambler):
+                    logging.debug(f"{gambler.name} busted.")
+                    gambler.bust()
                     break
                 elif action == Action.DOUBLE_DOWN:
-                    # The player only gets one card after doubling down.
+                    # The gambler only gets one card after doubling down.
                     break
                 else:
                     continue
 
-    def _core_gambler_loop(self, gambler: Gambler, bets: dict):
-        def action_func(nth_card: int):
-            return gambler.run_play_strategy(
-                dealer_value=self._dealer.get_value(),
-                allowed_actions=self._get_allowed_gambler_actions(gambler, nth_card),
-            )
+    def _core_dealer_loop(self, dealer: Dealer):
+        logging.debug(f"{dealer.name} is playing..")
 
-        self._core_loop(action_func, gambler, bets)
+        while True:
+            action = dealer.run_play_strategy()
 
-    def _core_dealer_loop(self, dealer: Dealer, bets: dict):
-        def action_func(_):
-            return dealer.run_play_strategy()
+            if action == Action.STAY:
+                logging.debug(f"{dealer.name} stays.")
+                break
+            elif action == Action.HIT:
+                logging.debug(f"{dealer.name} hits.")
 
-        self._core_loop(action_func, dealer, bets)
+                dealer.deal_card(self._deck.get_card())
 
-    def _collect_bets(self) -> dict:
-        bets = {}
-        for gambler in self.in_game_gamblers:
-            bet = gambler.run_bet_strategy(
-                minimum_bet=self._config.minimum_bet,
-                maximum_bet=self._config.maximum_bet,
-            )
-            bets[gambler] = bet
+                logging.debug(f"{dealer.name}'s new value is {dealer.get_value()}.")
 
-        return bets
-
-    def _distribute_bets(
-        self,
-        bets: dict,
-        winning_gamblers: list[Gambler],
-        losing_gamblers: list[Gambler],
-    ):
-        # All lost bets go to the dealer.
-        for lost_gambler in losing_gamblers:
-            lost_bet = bets[lost_gambler]
-            logging.debug(f"{lost_gambler} lost {lost_bet} to {self._dealer.name}.")
-
-            self._dealer.pay(lost_bet)
-
-        # The winning players get paid 1:2, except for when it is blackjack, in which case they get paid 2:3.
-        for winning_gambler in winning_gamblers:
-            winning_bet = bets[winning_gambler]
-            self._dealer.take_away(winning_bet)
-            if winning_gambler.value_is_blackjack(self._config.blackjack):
-                amount = winning_bet + (winning_bet * 1.5)
-                logging.debug(
-                    f"Blackjack! {winning_gambler} won {amount} from {self._dealer.name}."
-                )
-
-                winning_gambler.pay(amount)
-            else:
-                amount = winning_bet + (winning_bet * 0.5)
-                logging.debug(
-                    f"{winning_gambler} won {amount} from {self._dealer.name}."
-                )
-
-                winning_gambler.pay(amount)
+                if self._player_busted(dealer):
+                    logging.debug(f"{dealer.name} busted.")
+                    dealer.bust()
+                    break
+                else:
+                    continue
 
     def _check_for_bankruptcy(self):
         for gambler in self.in_game_gamblers:
@@ -245,7 +221,7 @@ class Game:
                 logging.info("Game cannot continue. Terminating early..")
                 break
 
-            bets = self._collect_bets()
+            self._bet_manager.collect_bets(self.in_game_gamblers)
 
             # First, each player gets one card.
             self._deal_to_every_gambler()
@@ -258,24 +234,29 @@ class Game:
 
             # Each player plays, one after another.
             for gambler in self._gamblers:
-                self._core_gambler_loop(gambler, bets)
+                self._core_gambler_loop(gambler)
 
             # Then the dealer plays.
-            self._core_dealer_loop(self._dealer, bets)
+            self._core_dealer_loop(self._dealer)
 
             if self._dealer.is_busted:
                 # Dealer is busted. Anyone who has not busted out wins.
-                self._distribute_bets(
-                    bets=bets,
+                self._bet_manager.distribute_bets(
+                    dealer=self._dealer,
                     winning_gamblers=self.in_game_gamblers,
                     losing_gamblers=self.busted_gamblers,
+                    pushed_gamblers=[],
                 )
+                self._dealer.add_result_to_log(RoundResult.LOST)
 
                 for in_game_gambler in self.in_game_gamblers:
-                    in_game_gambler.increment_wins()
+                    in_game_gambler.add_result_to_log(RoundResult.WIN)
+
+                for busted_gambler in self.busted_gamblers:
+                    busted_gambler.add_result_to_log(RoundResult.LOST)
             else:
                 # Dealer stays. Everyone else with score less than the dealer loses, everyone with a score higher
-                # than the dealer wins. Rest get their money back.
+                # than the dealer wins. Rest get their money back (push).
                 winners = [
                     gambler
                     for gambler in self.in_game_gamblers
@@ -286,20 +267,32 @@ class Game:
                     for gambler in self.in_game_gamblers
                     if gambler.get_value() < self._dealer.get_value()
                 ]
+                pushed = [
+                    gambler
+                    for gambler in self.in_game_gamblers
+                    if gambler.get_value() == self._dealer.get_value()
+                ]
 
-                self._distribute_bets(
-                    bets=bets,
+                self._bet_manager.distribute_bets(
+                    dealer=self._dealer,
                     winning_gamblers=winners,
                     losing_gamblers=losers + self.busted_gamblers,
+                    pushed_gamblers=pushed,
                 )
 
-                self._dealer.increment_wins()
-                for winning_gambler in winners:
-                    if winning_gambler.get_value() > self._dealer.get_value():
-                        winning_gambler.increment_wins()
+                self._dealer.add_result_to_log(RoundResult.WIN)
 
-            for in_game_player in self.all_in_game_players:
-                in_game_player.increment_played()
+                for winner in winners:
+                    winner.add_result_to_log(RoundResult.WIN)
+
+                for loser in losers:
+                    loser.add_result_to_log(RoundResult.LOST)
+
+                for push in pushed:
+                    push.add_result_to_log(RoundResult.PUSH)
+
+            for bankrupt_player in self.bankrupt_gamblers:
+                bankrupt_player.add_result_to_log(RoundResult.NOT_PLAYED)
 
             for player in self.all_players:
                 player.add_to_bankroll_log()

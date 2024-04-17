@@ -1,23 +1,12 @@
 import logging
-from enum import Enum, auto
 from types import ModuleType
 from typing import TypeVar
 
 from game.constants import CardValues
 from game.deck.card import Card
 from game.exceptions import StrategyNotFoundException, NotEnoughBankrollException
-
-
-class Status(Enum):
-    # The player is currently in play, in the game.
-    IN_GAME = auto()
-
-    # The player has busted, but is still in the game.
-    BUSTED = auto()
-
-    # The player has lost all their bankroll, and is out of the game.
-    BANKRUPT = auto()
-
+from game.player.round_result import RoundResult
+from game.player.status import Status
 
 T = TypeVar("T")
 
@@ -29,8 +18,7 @@ class Player:
         self.status: Status = Status.IN_GAME
         self._cards: list[Card] = []
         self.bankroll_log = [bankroll]
-        self.wins = 0
-        self.played = 0
+        self.result_log: list[RoundResult] = []
 
     @property
     def is_busted(self):
@@ -68,11 +56,8 @@ class Player:
         if not self.is_bankrupt:
             self.status = Status.IN_GAME
 
-    def increment_wins(self):
-        self.wins += 1
-
-    def increment_played(self):
-        self.played += 1
+    def add_result_to_log(self, result: RoundResult):
+        self.result_log.append(result)
 
     def add_to_bankroll_log(self):
         self.bankroll_log.append(self.bankroll)
