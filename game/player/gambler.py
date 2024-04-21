@@ -3,6 +3,7 @@ import user.play_strategies
 from game.constants import CardValues
 from game.exceptions import InvalidBetException, InvalidActionException
 from game.player.player import Player
+from game.player.round_result import GamblerResult
 from game.strategy import (
     BetStrategy,
     default_gambler_play_strategy,
@@ -22,6 +23,8 @@ class Gambler(Player):
     ):
         self.bet_strategy = bet_strategy
         self.play_strategy = play_strategy
+        self.result_log: list[GamblerResult] = []
+
         super().__init__(name, bankroll)
 
     @classmethod
@@ -63,3 +66,6 @@ class Gambler(Player):
             raise InvalidActionException(action, allowed_actions)
 
         return action
+
+    def add_result_to_log(self, result: GamblerResult):
+        self.result_log.append(result)

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from game.constants import DEALER_NAME, CardValues
+from game.constants import DEALER_NAME
 from game.deck.card import Card, Rank, Suit
 from game.deck.deck import Deck
 from game.exceptions import (
@@ -15,8 +15,9 @@ from game.game.game import Game
 from game.game.game_config import GameConfig
 from game.player.dealer import Dealer
 from game.player.gambler import Gambler
-from game.player.round_result import RoundResult
-from game.strategy import Action
+from game.player.round_result import GamblerResult, DealerResult
+from game.strategy import GamblerPlayStrategy, BetStrategy
+from .strategies import stay_everytime_play_strat, minimum_bet_play_strat
 
 
 class TestGame:
@@ -54,7 +55,7 @@ class TestGame:
             )
 
     @pytest.mark.parametrize(
-        "game_amount,cards,expected_dealer_bankroll_log,expected_dealer_round_log,expected_gambler_bankroll_log,expected_gambler_round_log",
+        "game_amount,cards,gambler_play_strat,gambler_bet_strat,expected_dealer_bankroll_log,expected_dealer_round_log,expected_gambler_bankroll_log,expected_gambler_round_log",
         [
             (  # Dealer win
                 1,
@@ -65,10 +66,12 @@ class TestGame:
                     Card(Rank.TEN, Suit.CLUBS),  # Dealer, 13
                     Card(Rank.FOUR, Suit.SPADES),  # Dealer, 17, dealer stays
                 ],
+                stay_everytime_play_strat,
+                minimum_bet_play_strat,
                 [100, 105],  # Dealer bankroll log
-                [RoundResult.WIN],  # Dealer results
+                [DealerResult.STAY],  # Dealer results
                 [20, 15],  # Gambler bankroll log
-                [RoundResult.LOST],  # Gambler results
+                [GamblerResult.LOST],  # Gambler results
             ),
             (  # Push
                 1,
@@ -79,10 +82,12 @@ class TestGame:
                     Card(Rank.TWO, Suit.CLUBS),  # Dealer, 7
                     Card(Rank.QUEEN, Suit.SPADES),  # Dealer, 17, dealer stays
                 ],
+                stay_everytime_play_strat,
+                minimum_bet_play_strat,
                 [100, 100],  # Dealer bankroll log
-                [RoundResult.WIN],  # Dealer wins
+                [DealerResult.STAY],  # Dealer wins
                 [20, 20],  # Gambler bankroll log
-                [RoundResult.PUSH],  # Gambler wins
+                [GamblerResult.PUSH],  # Gambler wins
             ),
         ],
     )
@@ -91,23 +96,13 @@ class TestGame:
         default_game_config: GameConfig,
         game_amount: int,
         cards: list[Card],
+        gambler_play_strat: GamblerPlayStrategy,
+        gambler_bet_strat: BetStrategy,
         expected_dealer_bankroll_log: list[float],
-        expected_dealer_round_log: list[RoundResult],
+        expected_dealer_round_log: list[DealerResult],
         expected_gambler_bankroll_log: list[float],
-        expected_gambler_round_log: list[RoundResult],
+        expected_gambler_round_log: list[GamblerResult],
     ):
-        def minimum_bet_strat(
-            _bankroll: float, minimum_bet: float, _maximum_bet: float
-        ) -> float:
-            return minimum_bet
-
-        def gambler_play_strat(
-            player_val: CardValues,
-            dealer_val: CardValues,
-            allowed_actions: list[Action],
-        ) -> Action:
-            return Action.STAY
-
         # We reverse the cards because they are popped from the end when being dealt.
         cards.reverse()
         preset_deck = Deck.with_cards(cards)
@@ -118,7 +113,7 @@ class TestGame:
                     name="Test Gambler",
                     bankroll=20,
                     play_strategy=gambler_play_strat,
-                    bet_strategy=minimum_bet_strat,
+                    bet_strategy=gambler_bet_strat,
                 )
             ],
             dealer=Dealer(bankroll=100),

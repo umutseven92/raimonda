@@ -5,7 +5,6 @@ from typing import TypeVar
 from game.constants import CardValues
 from game.deck.card import Card
 from game.exceptions import StrategyNotFoundException, NotEnoughBankrollException
-from game.player.round_result import RoundResult
 from game.player.status import Status
 
 T = TypeVar("T")
@@ -18,7 +17,6 @@ class Player:
         self.status: Status = Status.IN_GAME
         self._cards: list[Card] = []
         self.bankroll_log = [bankroll]
-        self.result_log: list[RoundResult] = []
 
     @property
     def is_busted(self):
@@ -55,9 +53,6 @@ class Player:
         self._cards = []
         if not self.is_bankrupt:
             self.status = Status.IN_GAME
-
-    def add_result_to_log(self, result: RoundResult):
-        self.result_log.append(result)
 
     def add_to_bankroll_log(self):
         self.bankroll_log.append(self.bankroll)

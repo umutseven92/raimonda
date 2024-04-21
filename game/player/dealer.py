@@ -4,6 +4,7 @@ import user.play_strategies
 from game.constants import DEALER_NAME
 from game.exceptions import InvalidActionException
 from game.player.player import Player
+from game.player.round_result import DealerResult
 from game.strategy import DealerPlayStrategy, Action, default_dealer_play_strategy
 
 # The dealer can only hit or stay.
@@ -17,6 +18,8 @@ class Dealer(Player):
         play_strategy: DealerPlayStrategy = default_dealer_play_strategy,
     ):
         self.play_strategy = play_strategy
+        self.result_log: list[DealerResult] = []
+
         super().__init__(DEALER_NAME, bankroll)
 
     @classmethod
@@ -38,3 +41,6 @@ class Dealer(Player):
             raise InvalidActionException(action, ALLOWED_ACTIONS)
 
         return action
+
+    def add_result_to_log(self, result: DealerResult):
+        self.result_log.append(result)

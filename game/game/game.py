@@ -19,7 +19,7 @@ from game.game.game_result import GameResult
 from game.player.dealer import Dealer
 from game.player.gambler import Gambler
 from game.player.player import Player
-from game.player.round_result import RoundResult
+from game.player.round_result import GamblerResult, DealerResult
 from game.strategy import Action
 
 
@@ -247,13 +247,13 @@ class Game:
                     losing_gamblers=self.busted_gamblers,
                     pushed_gamblers=[],
                 )
-                self._dealer.add_result_to_log(RoundResult.LOST)
+                self._dealer.add_result_to_log(DealerResult.BUST)
 
                 for in_game_gambler in self.in_game_gamblers:
-                    in_game_gambler.add_result_to_log(RoundResult.WIN)
+                    in_game_gambler.add_result_to_log(GamblerResult.WIN)
 
                 for busted_gambler in self.busted_gamblers:
-                    busted_gambler.add_result_to_log(RoundResult.LOST)
+                    busted_gambler.add_result_to_log(GamblerResult.LOST)
             else:
                 # Dealer stays. Everyone else with score less than the dealer loses, everyone with a score higher
                 # than the dealer wins. Rest get their money back (push).
@@ -280,19 +280,19 @@ class Game:
                     pushed_gamblers=pushed,
                 )
 
-                self._dealer.add_result_to_log(RoundResult.WIN)
+                self._dealer.add_result_to_log(DealerResult.STAY)
 
                 for winner in winners:
-                    winner.add_result_to_log(RoundResult.WIN)
+                    winner.add_result_to_log(GamblerResult.WIN)
 
                 for loser in losers:
-                    loser.add_result_to_log(RoundResult.LOST)
+                    loser.add_result_to_log(GamblerResult.LOST)
 
                 for push in pushed:
-                    push.add_result_to_log(RoundResult.PUSH)
+                    push.add_result_to_log(GamblerResult.PUSH)
 
             for bankrupt_player in self.bankrupt_gamblers:
-                bankrupt_player.add_result_to_log(RoundResult.NOT_PLAYED)
+                bankrupt_player.add_result_to_log(GamblerResult.NOT_PLAYED)
 
             for player in self.all_players:
                 player.add_to_bankroll_log()
