@@ -126,3 +126,13 @@ def example_bet_strategy(
         # If not, bet the minimum.
         return minimum_bet
 ```
+
+## TODO
+
+* Correct Blackjack win (Ace + Ten)
+* Test double down
+* Split
+* Surrender
+* Even money
+* Insurance
+* Update documentation
