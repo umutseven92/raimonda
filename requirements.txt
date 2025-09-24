@@ -34,7 +34,7 @@ packaging==24.0
     #   pytest
 pillow==10.3.0
     # via matplotlib
-pip==24.0
+pip==25.2
 platformdirs==4.2.0
     # via virtualenv
 pluggy==1.4.0
