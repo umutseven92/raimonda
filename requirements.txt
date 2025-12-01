@@ -10,7 +10,7 @@ distlib==0.3.8
     # via virtualenv
 filelock==3.13.4
     # via virtualenv
-fonttools==4.51.0
+fonttools==4.61.0
     # via matplotlib
 identify==2.5.35
     # via pre-commit
