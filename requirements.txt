@@ -55,5 +55,5 @@ six==1.16.0
 types-pyyaml==6.0.12.20240311
 typing-extensions==4.11.0
     # via mypy
-virtualenv==20.25.3
+virtualenv==20.36.1
     # via pre-commit
