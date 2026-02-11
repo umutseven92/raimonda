@@ -32,7 +32,7 @@ packaging==24.0
     # via
     #   matplotlib
     #   pytest
-pillow==10.3.0
+pillow==12.1.1
     # via matplotlib
 pip==24.0
 platformdirs==4.2.0
